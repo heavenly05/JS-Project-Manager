@@ -737,4 +737,4 @@ function copyDirectory(from, to, sub_dir_name){
 
 
 
-export {getFile,getFileAsync, getFileP, handleClientData,writeFile, doesFileExist,isDirectory,isFile, ListDirectories, ListFiles, ListFilesWithPaths, ListDirectoriesWithPaths, makeFolder, copyFile,setJSONFileProperty, copyDirectory, validateBaseName, HFile,HParentDirectory,HChildDirectory, arrToPath, pathToArr, InputManager, getFileExtension, removeFileExtension, isProperFileName}
+export {getFile,getFileAsync, getFileP, handleClientData,writeFile, doesFileExist,isDirectory,isFile, ListDirectories, ListFiles, ListFilesWithPaths, ListDirectoriesWithPaths, makeFolder, copyFile,setJSONFileProperty, copyDirectory, validateBaseName, HFile,HParentDirectory,HChildDirectory, arrToPath, pathToArr, InputManager, getFileExtension, removeFileExtension, isProperFileName, getJSONFile}
