@@ -1,7 +1,7 @@
 import * as Utils from "heavens-utils/Utils"
 import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Path from "node:path"
-import { HNO_PROJ_DIR_FOUND } from "./classes"
+import { H_NO_PROJDIR_FOUND_OPTIONS} from "./classes.js"
 //We want a project like structure. 
 
 //We want to first see what kind of project the user will be making
@@ -41,7 +41,6 @@ async function run(){
     if(ServerUtils.isDirectory(projectDir)){
 
     }else{
-        HNO_PROJ_DIR_FOUND
     }
 }
 // run()
