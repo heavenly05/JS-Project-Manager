@@ -38,9 +38,9 @@ async function run(){
 
     let { projectDir } = HConfig
 
-    if(ServerUtils.isDirectory(projectDir)){
-
-    }else{
-    }
+   if(!ServerUtils.isDirectory(projectDir)){
+        console.log("There is no Projects Directory found,Please Choose an Option")
+        console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
+   }
 }
-// run()
+run()

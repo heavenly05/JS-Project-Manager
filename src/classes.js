@@ -1,11 +1,13 @@
 import { HOptionList, HOption} from "heavens-utils/Utils"
 
-export class H_NO_ProjDir_Found extends HOptionList{
+export class HUser_Directory_Resolve extends HOptionList{
     constructor(){
         super([
-            new HOption("Dinner With JZ")
+            new HOption("Enter path to an existing Projects Directory"),
+            new HOption("Enter path to create a new Projects Directory"),
+            new HOption("Let the project manager create a new Projects driectory")
         ])
     }
 }
 
-export const H_NO_PROJDIR_FOUND_OPTIONS = (new H_NO_ProjDir_Found())
+export const H_NO_PROJDIR_FOUND_OPTIONS = (new HUser_Directory_Resolve())
