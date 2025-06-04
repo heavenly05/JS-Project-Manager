@@ -2,6 +2,7 @@ import * as Utils from "heavens-utils/Utils"
 import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Path from "node:path"
 import { H_NO_PROJDIR_FOUND_OPTIONS} from "./classes.js"
+import { writeFile } from "node:fs"
 //We want a project like structure. 
 
 //We want to first see what kind of project the user will be making
@@ -39,12 +40,14 @@ async function run(){
     let { projectDir } = HConfig
 
    if(!ServerUtils.isDirectory(projectDir)){
+    //if the project directory does not exist ask the user if they woant ot manually point to a file or let the Project manage handle it.
         console.log("There is no Projects Directory found, Please Choose an Option")
         console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
-        let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2,3], "Thats not a valid input")))) - 1]
+        let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2], "Thats not a valid input")))) - 1]
 
-        selected_option.performAction()
-
+        HConfig["projectDir"] = await selected_option.performAction(script_dir)
+        //save the directory for future reference within HConfig file   
+        ServerUtils.writeFile(path_to_HConfig, JSON.stringify(HConfig))
    }
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
