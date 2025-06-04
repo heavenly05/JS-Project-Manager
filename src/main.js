@@ -1,7 +1,7 @@
 import * as Utils from "heavens-utils/Utils"
 import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Path from "node:path"
-import { H_NO_PROJDIR_FOUND_OPTIONS} from "./classes.js"
+import { H_NO_PROJDIR_FOUND_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS} from "./classes.js"
 import { writeFile } from "node:fs"
 //We want a project like structure. 
 
@@ -41,22 +41,23 @@ async function run(){
 
    if(!ServerUtils.isDirectory(projectDir)){
     //if the project directory does not exist ask the user if they woant ot manually point to a file or let the Project manage handle it.
-        console.log("There is no Projects Directory found, Please Choose an Option")
-        console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
-        let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2,3], "Thats not a valid input")))) - 1]
-
         while(true){
+            console.log("There is no Projects Directory found, Please Choose an Option")
+            console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
+            let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2,3], "Thats not a valid input")))) - 1]
             let inp = await selected_option.performAction(script_dir)
             if(inp != null) {
-                HConfig["projectDir"] = inp
+                HConfig["projectDir"] = Path.resolve(inp)
                 break
             }
         }
-        
-
         //save the directory for future reference within HConfig file   
         ServerUtils.writeFile(path_to_HConfig, JSON.stringify(HConfig))
    }
+
+   console.log(HPROJECT_MANAGER_MAIN_MENU_OPTIONS.toString())
+
+
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
 
@@ -66,3 +67,5 @@ run().then(v => ServerUtils.InputManager.close_stdin())
  
 
  */
+
+ 
