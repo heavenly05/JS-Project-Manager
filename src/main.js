@@ -1,8 +1,9 @@
 import * as Utils from "heavens-utils/Utils"
 import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Path from "node:path"
-import { getIndexeWOZindex, getRangeArr, H_NO_PROJDIR_FOUND_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS} from "./classes.js"
-import { writeFile } from "node:fs"
+import {execSync} from "node:child_process"
+import { getIndexeWOZindex, getRangeArr, H_NO_PROJDIR_FOUND_OPTIONS, HBACKEND_TEMPLATE_OPTIONS, HFRONTEND_TEMPLATE_OPTIONS, HPROJECT_LIST_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS, MISSING_BACKEND_TEMPLATES_ERRMSG, MISSING_FRONTEND_TEMPLATES_ERRMSG} from "./classes.js"
+
 //We want a project like structure. 
 
 //We want to first see what kind of project the user will be making
@@ -27,6 +28,14 @@ let HConfig
 
 //all projects will have a HPRConfig.json file with meta data in it
 async function run(){
+        if(!ServerUtils.isDirectory("./res/templates/backend_templates")){
+        console.error(MISSING_BACKEND_TEMPLATES_ERRMSG)
+    }
+
+      if(!ServerUtils.isDirectory("./res/templates/frontend_templates")){
+         console.error(MISSING_FRONTEND_TEMPLATES_ERRMSG)
+    }
+
     const path_to_HConfig = Path.join(script_dir, "HConfig.json")
     if(ServerUtils.isFile(path_to_HConfig)){
         HConfig = ServerUtils.getJSONFile(path_to_HConfig) 
@@ -34,6 +43,7 @@ async function run(){
         //if there is no HConfig.json create one, set the projectDir to by defualt HProjects in the current direcotry
         HConfig = ServerUtils.getJSONFile(ServerUtils.writeFile(path_to_HConfig, JSON.stringify({projectDir : Path.join(script_dir, "HProjects")})))
     }
+
 
     //now its time to analyze where the projects are.
 
@@ -73,6 +83,7 @@ async function run(){
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
 
+// console.log(HPROJECT_LIST_OPTIONS.getOptions()[0].performAction())
 
 /*TODO 
     turn InputManger.readline()
@@ -82,7 +93,11 @@ run().then(v => ServerUtils.InputManager.close_stdin())
 
     add a fnctionality to greet user by their name and the ability to change the name
 
-    try to impement "getOption" instead of "getOptions"
+    try to impement "getOption" instead of "getOptions" 
+
+    fix getOption
+
+    edit List... functions in ServerUtils so their JDocs have the proper @returns tags
  */
 
  
