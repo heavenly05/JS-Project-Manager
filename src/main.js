@@ -43,7 +43,7 @@ async function run(){
         console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
         let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2,3], "Thats not a valid input")))) - 1]
 
-        selected_option.getAction()
+        selected_option.performAction()
 
    }
 }

@@ -1287,7 +1287,7 @@ export class HOption{
      * @heavenly05
      * creates a new option, containing a name for the option and an action. when performing an action the name is passed in as a parameter to the action function
      * @param {string} name 
-     * @param {(option_name : string)()} action 
+     * @param {(args : any)()} action 
      */
     constructor(name, action){
         if(typeof name != 'string') throw new TypeError("name must be a string")
@@ -1313,9 +1313,10 @@ export class HOption{
      * @heavenly05
      * Runs the specified action for the option, args will be passed into the action, if its not undefined
      * @param {any} args 
+     * @returns {unknown}
      */
     performAction(args){
-        if(this.#action != undefined)this.#action(args)
+        if(this.#action != undefined) return this.#action(args)
     }
 
     /**

@@ -9,3 +9,7 @@
 
 # [1.1.3] Jun 3 2025
 ### - Enabled fucntionality to pass in a paramater to actions for HOptions in ```Utils.js```
+
+# [1.1.4] Jun 3 2025
+### - Enabled fucntionality for actions to return a value from the ```performAction``` method <br> - Revised JDoc For some HOption methods
+
