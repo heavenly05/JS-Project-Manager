@@ -1,12 +1,12 @@
 {
   "name": "heavens-project",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "./src/main.js",
   "dependencies": {
-    "heavens-utils": "^1.0.1"
+    "heavens-project": "file:",
+    "heavens-utils": "^1.1.4"
   },
   "type": "module",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
