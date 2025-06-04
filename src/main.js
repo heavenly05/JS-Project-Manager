@@ -1,7 +1,7 @@
 import * as Utils from "heavens-utils/Utils"
 import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Path from "node:path"
-import { H_NO_PROJDIR_FOUND_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS} from "./classes.js"
+import { getIndexeWOZindex, getRangeArr, H_NO_PROJDIR_FOUND_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS} from "./classes.js"
 import { writeFile } from "node:fs"
 //We want a project like structure. 
 
@@ -44,7 +44,7 @@ async function run(){
         while(true){
             console.log("There is no Projects Directory found, Please Choose an Option")
             console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
-            let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2,3], "Thats not a valid input")))) - 1]
+            let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptions().length), "Thats not a valid input")))) - 1]
             let inp = await selected_option.performAction(script_dir)
             if(inp != null) {
                 HConfig["projectDir"] = Path.resolve(inp)
@@ -55,17 +55,34 @@ async function run(){
         ServerUtils.writeFile(path_to_HConfig, JSON.stringify(HConfig))
    }
 
-   console.log(HPROJECT_MANAGER_MAIN_MENU_OPTIONS.toString())
 
+
+
+   console.log("Welcome to Javasript Project Manager. Choose an Option below to get started. Press (CTRL + C) at any time to quit.")
+
+   while(true){
+        console.log(HPROJECT_MANAGER_MAIN_MENU_OPTIONS.toString())
+
+        let selected_option = HPROJECT_MANAGER_MAIN_MENU_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HPROJECT_MANAGER_MAIN_MENU_OPTIONS.getOptions().length), "Thats not a valid input")))) - 1]
+
+        await selected_option.performAction(projectDir)
+        
+   }    
+   
 
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
+
 
 /*TODO 
     turn InputManger.readline()
  into a proper promise function
  
+    add a getOptionsCount to HOptionList and HOptionListInterface
 
+    add a fnctionality to greet user by their name and the ability to change the name
+
+    try to impement "getOption" instead of "getOptions"
  */
 
  
