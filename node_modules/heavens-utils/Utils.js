@@ -1311,10 +1311,11 @@ export class HOption{
 
     /**
      * @heavenly05
-     * Runs the specified action for the option
+     * Runs the specified action for the option, args will be passed into the action, if its not undefined
+     * @param {any} args 
      */
-    performAction(){
-        if(this.#action != undefined)this.#action(this.getName())
+    performAction(args){
+        if(this.#action != undefined)this.#action(args)
     }
 
     /**

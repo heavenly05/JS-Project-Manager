@@ -39,8 +39,12 @@ async function run(){
     let { projectDir } = HConfig
 
    if(!ServerUtils.isDirectory(projectDir)){
-        console.log("There is no Projects Directory found,Please Choose an Option")
+        console.log("There is no Projects Directory found, Please Choose an Option")
         console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
+        let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine([1,2,3], "Thats not a valid input")))) - 1]
+
+        selected_option.getAction()
+
    }
 }
-run()
+run().then(v => ServerUtils.InputManager.close_stdin())
