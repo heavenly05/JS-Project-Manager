@@ -71,12 +71,88 @@ export class HBackEndTemplates_List extends Utils.HOptionList{
 
 export class HProject_List extends Utils.HOptionList{
     constructor(){
-        super(ServerUtils.ListDirectories(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]).map(v => new Utils.HOption(v, async (p) => Path.join(Path.resolve(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]), v))))
+        super(ServerUtils.ListDirectories(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]).map(v => new Utils.HOption(v, (p) => Path.join(Path.resolve(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]), v))))
+    }
+}
+
+export class HProject_Info_List extends Utils.HOptionList{
+    constructor(){
+         super(HPROJECT_LIST_OPTIONS.getOptions().map(v => v.performAction()).map(m => new Utils.HOption(Path.basename(m), () => (ServerUtils.isFile(Path.join(m, "HProj.json"))) ? ServerUtils.getJSONFile(Path.join(m, "HProj.json")): null)))
+        }
+
+}
+
+export class HActive_Projects_List extends Utils.HOptionList{
+    constructor(){
+        //lowkey man
+        super(HPROJECT_INFO_LIST_OPTIONS.getOptions().filter(v => v.performAction()["isActive"] == true).map(p => new Utils.HOption(p.performAction()["project_name"], () => Path.join((ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]),p.performAction()["project_name"]))))
+    }
+}
+
+export class HInactive_Projects_List extends Utils.HOptionList{
+    constructor(){
+        //lowkey man
+        super(HPROJECT_INFO_LIST_OPTIONS.getOptions().filter(v => v.performAction()["isActive"] == false).map(p => new Utils.HOption(p.performAction()["project_name"], () => Path.join((ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]),p.performAction()["project_name"]))))
+    }
+}
+
+export class HBrowser_Option_List extends Utils.HOptionList{
+    constructor(){
+        super([
+            new Utils.HOption("chrome", async () => {
+                return "chrome"
+            }),
+            
+            new Utils.HOption("Microsoft edge", async () => {
+                return "msedge"
+            }),
+
+            new Utils.HOption("Other Browser", async () => {
+                console.log("enter the path or system alias for your browser")
+                return await ServerUtils.InputManager().readLine()
+            })
+        ])
+    }
+}
+
+export class HProject_Visibility_List extends Utils.HOptionList{
+    constructor(){
+        super([
+            new Utils.HOption("Active Projects", () => {
+
+                if((HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
+                    console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
+                }else{
+                    console.log("[* You have no active projects *]")
+                    return null
+                }
+            }),
+
+            new Utils.HOption("Inactive Projects", () => {
+                if((HINACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
+                    console.log(HINACTIVE_PROJECTS_LIST_OPTIONS.toString())
+                }else{
+                    console.log("[* You have no inactive projects *]")
+                    return null
+                }
+            }),
+
+            new Utils.HOption("All Projects", () => {
+                 if((HPROJECT_LIST_OPTIONS.getOptions().length > 0)){
+                    console.log(HPROJECT_LIST_OPTIONS.toString())
+                }else{
+                    console.log("[* You have no projects *]")
+                    return null
+                }
+            }),
+
+            new Utils.HOption("cancel", () =>  null)
+        ])
     }
 }
 
 /**
- *Project manager maiun menu
+ *Project manager main menu
  */
 export class HProject_Manager_Main_Menu extends Utils.HOptionList{
     constructor(){
@@ -172,21 +248,75 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 }
                 console.log("*JPM only supports opening projects with Visual Studio Code, Make sure you have VCS 'code' command set up or something unexpected will occur.*\n")
 
-                console.log(`You have ${HPROJECT_LIST_OPTIONS.getOptions().length } projects.`)
+                console.log(`You have ${HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length } active projects.`)
                 console.log("Select which project you would like to load.")
 
-                console.log(HPROJECT_LIST_OPTIONS.toString())
+                console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 
-                execSync(`code ${await (HPROJECT_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HPROJECT_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()}`)
+                execSync(`code ${await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()}`)
 
             }),
 
-            new Utils.HOption("View Current Projects"), async (v) => {
+            new Utils.HOption("View Current Projects", async (v) => {
+                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptions() < 1){
+                    console.log("You have no active projects")
+                }
+                console.log("View your Active/Inactive Projects\n")
+                console.log("Select an option below.")
 
-            },
+                console.log(HPROJECT_VISIBILITY_LIST_OPTIONS.toString())
+
+            await (HPROJECT_VISIBILITY_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HPROJECT_VISIBILITY_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()
+
+            }),
 
             new Utils.HOption("Run a Project", async(v) => {
+                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptions() < 1){
+                    console.log("You have no active projects")
+                }
 
+                console.log("JPM will look for a package.json folder and run the file in the 'main' field for backend projects. If a package.json file does not exist, JPM will look for a src/Main.js file and will run it with node. it should be the entry into your program\n\nJPM will look for a src/index.html in Frontend projects and try to run it with chrome or microsoft edge or a selected browser, it should be the entry into your program.")
+
+                console.log("Please select an option from the list below")
+
+                console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
+
+                let selected_project_path = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()
+
+                let path_to_hproj = Path.join(selected_project_path, "HProj.json")
+
+                if(!ServerUtils.isFile(path_to_hproj)){
+                    console.log("Project does not have a HProj.json file please recover or reconstruct it.")
+                    return
+                }
+
+                const type = ServerUtils.getJSONFile(path_to_hproj)["type"]
+
+                if(type == "backend"){
+                    //check for a package.json file first, check if it has a main field and then run 
+                    if(ServerUtils.isFile(Path.join(selected_project_path, "package.json"))){
+                        if("main" in ServerUtils.getJSONFile(Path.join(selected_project_path, "package.json"))){
+                            execSync(`node ${selected_project_path}`)
+                        }
+                    }else if(ServerUtils.isFile(Path.join(selected_project_path,"src/Main.js"))){
+                        execSync(`start cmd /k node ${Path.join(selected_project_path,"src/Main.js")}`)
+                    }else{
+                        console.log("Unable to run backend project because one of the following reasons:\n1.Project does not contain src/Main.js\n2.Project does not have a main field in package.json file.\n3.Project does not have a package.json file and (reason 1).")
+                        return null
+                    }
+                }else if(type == "frontend"){
+                    if(ServerUtils.doesFileExist(Path.join(selected_project_path, "src/index.html"))){
+                        console.log("Select a browser\n")
+
+                        execSync(`code ${await (HBROWSER_OPTION_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HBROWSER_OPTION_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()} ${Path.join(selected_project_path, "src/index.html")}`)
+
+                    }else{
+                        console.log("Project does not contain a src/index.html file")
+                    }
+                }else{
+                    console.log("Project lacks a type field in its HProj.json file.")
+                    return null
+                }
             }),
 
             new Utils.HOption("Remove A Project"), async (v) => {
@@ -255,6 +385,17 @@ export const HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
 export const HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
 
 export const HPROJECT_LIST_OPTIONS = (new HProject_List())
+
+export const HPROJECT_INFO_LIST_OPTIONS = (new HProject_Info_List())
+
+export const HACTIVE_PROJECTS_LIST_OPTIONS = (new HActive_Projects_List())
+
+export const HPROJECT_VISIBILITY_LIST_OPTIONS = (new HProject_Visibility_List())
+
+export const HINACTIVE_PROJECTS_LIST_OPTIONS = (new HInactive_Projects_List())
+
+export const HBROWSER_OPTION_LIST_OPTIONS = (new HBrowser_Option_List())
+
 
 export const MISSING_BACKEND_TEMPLATES_ERRMSG =  "*backend templates are missing, you will be unable to create backend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the backend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +" if the res or template folder does not exist place reconstruct the path.\n\nThe last option is to create your own backend template*"
 

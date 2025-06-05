@@ -2,7 +2,7 @@ import * as Utils from "heavens-utils/Utils"
 import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Path from "node:path"
 import {execSync} from "node:child_process"
-import { getIndexeWOZindex, getRangeArr, H_NO_PROJDIR_FOUND_OPTIONS, HBACKEND_TEMPLATE_OPTIONS, HFRONTEND_TEMPLATE_OPTIONS, HPROJECT_LIST_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS, MISSING_BACKEND_TEMPLATES_ERRMSG, MISSING_FRONTEND_TEMPLATES_ERRMSG} from "./classes.js"
+import { getRangeArr, H_NO_PROJDIR_FOUND_OPTIONS, HACTIVE_PROJECTS_LIST_OPTIONS, HINACTIVE_PROJECTS_LIST_OPTIONS, HPROJECT_INFO_LIST_OPTIONS, HPROJECT_LIST_OPTIONS, HPROJECT_MANAGER_MAIN_MENU_OPTIONS, MISSING_BACKEND_TEMPLATES_ERRMSG, MISSING_FRONTEND_TEMPLATES_ERRMSG} from "./classes.js"
 
 //We want a project like structure. 
 
@@ -83,7 +83,7 @@ async function run(){
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
 
-// console.log(HPROJECT_LIST_OPTIONS.getOptions()[0].performAction())
+// execSync("start cmd /k node .")
 
 /*TODO 
     turn InputManger.readline()
@@ -98,6 +98,8 @@ run().then(v => ServerUtils.InputManager.close_stdin())
     fix getOption
 
     edit List... functions in ServerUtils so their JDocs have the proper @returns tags
+
+    add returns unkonwn to JDOC of HOPTIONS 
  */
 
  
