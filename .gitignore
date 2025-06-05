@@ -1,2 +1,5 @@
-src/HConfig.json
-src/HProjects
+/src/HProjects
+HConfig.json
+
+git rm --cached src/HConfig.json
+git commit -m "Stopped tracking HConfig.json"
