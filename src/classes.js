@@ -71,14 +71,19 @@ export class HBackEndTemplates_List extends Utils.HOptionList{
 
 export class HProject_List extends Utils.HOptionList{
     constructor(){
-        super(ServerUtils.ListDirectories(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]).map(v => new Utils.HOption(v, (p) => Path.join(Path.resolve(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]), v))))
+        
+        super(((ServerUtils.isFile("./src/HConfig.json")) ? (!(ServerUtils.isDirectory(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]))) ? [] : ServerUtils.ListDirectories(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]).map(v => new Utils.HOption(v, (p) => Path.join(Path.resolve(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]), v))) : []))
     }
 }
 
 export class HProject_Info_List extends Utils.HOptionList{
     constructor(){
-         super(HPROJECT_LIST_OPTIONS.getOptions().map(v => v.performAction()).map(m => new Utils.HOption(Path.basename(m), () => (ServerUtils.isFile(Path.join(m, "HProj.json"))) ? ServerUtils.getJSONFile(Path.join(m, "HProj.json")): null)))
-        }
+        console.log(HPROJECT_LIST_OPTIONS.getOptions().filter(v => {
+            console.log(!!ServerUtils.isFile(Path.join(v.performAction(), "HProj.json")))
+        }))
+        //((ServerUtils.isFile("./src/HConfig.json")) ? (!(ServerUtils.isDirectory(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]))) ? [] : ServerUtils.ListDirectories(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]).map(v => new Utils.HOption(v, (p) => Path.join(Path.resolve(ServerUtils.getJSONFile("./src/HConfig.json")["projectDir"]), v))) : [])
+         super()
+    }
 
 }
 
