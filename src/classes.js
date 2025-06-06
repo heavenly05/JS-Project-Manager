@@ -212,8 +212,10 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                     if(inp == 'cancel') return null
                     if(!inp.includes(" ")){
                         if(inp.length >= 3){
-                            project_name = inp.toString()
-                            break
+                            if(!ServerUtils.isDirectory(Path.join(v, inp))){
+                                project_name = inp.toString()
+                                break
+                            }else console.log("A project with that name already exists.")
                         }else console.log("Project name must be at least 3 characters long.")
                     }else console.log("Project name cannot contain any spaces. use - or _ instead.")
                 }
@@ -444,12 +446,70 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
 
             new Utils.HOption("Make a Template", async (v) => {
+                let type
+                let template_name
+                let path_to_template
+                console.log("Choose which type of project your template will be for.\n")
+                console.log(HCreate_Project_Type_Options.toString())
+                while(true){
+                    type = await await HCreate_Project_Type_Options.getOptions()[Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptions().length), "thats not a valid input"))) - 1].performAction()
+
+                    if (type == null) return
+                    else break
+                }
+
+                 console.log('Enter a name for your Template\nType cancel to return.\n') 
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+                    if(inp == 'cancel') return null
+                    if(!inp.includes(" ")){
+                        if(inp.length >= 3){
+                            if((type == "frontend" && !ServerUtils.isDirectory(Path.join("./res/templates/frontend_templates" , inp))) || (type == "backend" && !ServerUtils.isDirectory(Path.join("./res/templates/backend_templates" , inp)))){
+                                template_name = inp.toString()
+                                break
+                            }else console.log("A Template with that name already exists.")
+                        }else console.log("Template name must be at least 3 characters long.")
+                    }else console.log("Template name cannot contain any spaces. use - or _ instead.")
+                }
+
+                console.log("\nEnter the path to where your template is stored.\nAll the files and folders will be copied from thereand placed within the JPM's templates folder. Templates must be deleted manually.\n*files that dont have names and only file extenstion (ex:.gitignore), may cause errors when copying the template. ensure you rename or remove the files before making your template.*\n\nType cancel to return.\n")
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+
+                    if(inp == 'cancel') return null
+                    if(ServerUtils.isDirectory(inp)) {
+                        path_to_template = inp
+                        break
+                    }
+                    console.log("The path specified does not point to a folder. Please enter a valid path.")
+                }
+                try {
+                    ServerUtils.copyDirectory(path_to_template, (type == "frontend") ? "./res/templates/frontend_templates" : "./res/templates/backend_templates", template_name)
+                    HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
+
+                    HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
+
+                console.log(template_name + " template created. Press Enter to return.")
+                
+                } catch (error) {
+                    console.error("could not create template, ensure you dont have any files in the template directory beginning with a period.\nPress Enter to return.")
+                    
+                }
+                
+                
+
                 
             }),
 
 
             new Utils.HOption("Configuration", async (v) => {
+                console.log
+                await HCreate_Project_Type_Options.getOptions()[Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptions().length), "thats not a valid input"))) - 1].performAction()
 
+                console.log("Press enter to return")
+                await ServerUtils.InputManager.readLine()
             }),
 
 
@@ -459,6 +519,32 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
     }
 }
 
+export class HConfiguration_Menu_List extends Utils.HOptionList{
+    constructor(){
+        //develper can change their projects directory
+        super([
+            new Utils.HOption("Change Projects Directory",async () => {
+                const script_dir = import.meta.dirname
+                const path_to_HConfig = Path.join(script_dir, "HConfig.json")
+
+                if(ServerUtils.isFile(path_to_HConfig)){
+                    HConfig = ServerUtils.getJSONFile(path_to_HConfig) 
+                        
+                    console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
+
+                    let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptions().length), "Thats not a valid input")))) - 1]
+
+                    let inp = await selected_option.performAction(script_dir)
+
+                    console.log(inp)
+                }
+            }),
+
+
+            new Utils.HOption("cancel", () => null)
+        ])
+    }
+}
 
 
 //6/4/2025
@@ -520,9 +606,9 @@ export const HPROJECT_MANAGER_MAIN_MENU_OPTIONS = (new HProject_Manager_Main_Men
 
 export const HCreate_Project_Type_Options = (new HCreate_Project_Type())
 
-export const HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
+export let HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
 
-export const HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
+export let HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
 
 //everything to do with managing project folders
 export let HPROJECT_LIST_OPTIONS = (new HProject_List())
@@ -543,7 +629,7 @@ export let HTYPED_PROJECTS_LIST = (new HTyped_Projects_List())
 
 export let HBROWSER_OPTION_LIST_OPTIONS = (new HBrowser_Option_List())
 
-
+export let HCONFIGURATION_MENU_LIST_OPTIONS = (new HConfiguration_Menu_List())
 
 //---
 

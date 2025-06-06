@@ -68,7 +68,7 @@ async function run(){
 
 
 
-   console.log("Welcome to Javasript Project Manager. Choose an Option below to get started. Press (CTRL + C) at any time to quit.")
+   console.log("Welcome to Javascript Project Manager. Choose an Option below to get started. Press (CTRL + C) at any time to quit.")
 
    while(true){
         console.log(HPROJECT_MANAGER_MAIN_MENU_OPTIONS.toString())
