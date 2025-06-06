@@ -2,6 +2,8 @@ import * as ServerUtils from "heavens-utils/ServerUtils"
 import * as Utils from "heavens-utils/Utils"
 import * as Path from "path"
 import {execSync} from "child_process"
+import { isFloat32Array } from "util/types"
+import { readFileSync } from "fs"
 
 export class HUser_Directory_Resolve extends Utils.HOptionList{
     constructor(){
@@ -85,7 +87,6 @@ export class HProject_Info_List extends Utils.HOptionList{
         super(HPROJECT_LIST_OPTIONS.getOptions().filter(v => ServerUtils.isFile(Path.join(v.performAction(), "HProj.json"))).map(p => new Utils.HOption(Path.basename(p.performAction()),() => [(ServerUtils.getJSONFile(Path.join(p.performAction(), "HProj.json"))), (Path.dirname(p.performAction()))]
     )))
     }
-
 }
 
 export class HActive_Projects_List extends Utils.HOptionList{
@@ -94,6 +95,27 @@ export class HActive_Projects_List extends Utils.HOptionList{
         super(HPROJECT_INFO_LIST_OPTIONS.getOptions().filter(v => v.performAction()[0]["isActive"] == true).map(p => new Utils.HOption(p.getName(), () => p.performAction()[1])))
     }
 }
+
+
+
+export class HTyped_Active_Projects_List extends Utils.HOptionList{
+    constructor(){
+        super(HPROJECT_INFO_LIST_OPTIONS.getOptions().filter(v => v.performAction()[0]["isActive"] == true).map((p) => new Utils.HOption(`${p.getName()} - ${p.performAction()[0]["type"]}`, p.getAction())))
+    }
+}
+
+export class HTyped_Projects_List extends Utils.HOptionList{
+    constructor(){
+        super(HPROJECT_INFO_LIST_OPTIONS.getOptions().map((p) => new Utils.HOption(`${p.getName()} - ${p.performAction()[0]["type"]}`, p.getAction())))
+    }
+}
+
+export class HTyped_Inactive_Projects_List extends Utils.HOptionList{
+    constructor(){
+        super(HPROJECT_INFO_LIST_OPTIONS.getOptions().filter(v => v.performAction()[0]["isActive"] == false).map((p) => new Utils.HOption(`${p.getName()} - ${p.performAction()[0]["type"]}`, p.getAction())))
+    }
+}
+
 
 export class HInactive_Projects_List extends Utils.HOptionList{
     constructor(){
@@ -123,12 +145,16 @@ export class HBrowser_Option_List extends Utils.HOptionList{
     }
 }
 
+
+
 export class HProject_Visibility_List extends Utils.HOptionList{
     constructor(){
+
         super([
             new Utils.HOption("Active Projects", () => {
                 if((HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
-                    console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
+
+                    console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 }else{
                     console.log("[* You have no active projects *]")
                     return null
@@ -137,7 +163,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
 
             new Utils.HOption("Inactive Projects", () => {
                 if((HINACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
-                    console.log(HINACTIVE_PROJECTS_LIST_OPTIONS.toString())
+                    console.log(HTYPED_INACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 }else{
                     console.log("[* You have no inactive projects *]")
                     return null
@@ -145,8 +171,8 @@ export class HProject_Visibility_List extends Utils.HOptionList{
             }),
 
             new Utils.HOption("All Projects", () => {
-                 if((HPROJECT_LIST_OPTIONS.getOptions().length > 0)){
-                    console.log(HPROJECT_LIST_OPTIONS.toString())
+                 if((HTYPED_PROJECTS_LIST.getOptions().length > 0)){
+                    console.log(HTYPED_PROJECTS_LIST.toString())
                 }else{
                     console.log("[* You have no projects *]")
                     return null
@@ -244,17 +270,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 ServerUtils.writeFile(Path.join(ServerUtils.copyDirectory(path_to_template,v,project_name),"HProj.json"), JSON.stringify(projOBJ))
                 
-                HPROJECT_LIST_OPTIONS = (new HProject_List())
-
-                HPROJECT_INFO_LIST_OPTIONS = (new HProject_Info_List())
-
-                HACTIVE_PROJECTS_LIST_OPTIONS = (new HActive_Projects_List())
-
-                HINACTIVE_PROJECTS_LIST_OPTIONS = (new HInactive_Projects_List())
-
-                HPROJECT_VISIBILITY_LIST_OPTIONS = (new HProject_Visibility_List())
-
-                
+                await refreshLists()
 
                 console.log(`Project ${project_name} created!.`)
                 console.log("Press Enter to continue")
@@ -320,7 +336,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 console.log("Please select an option from the list below")
 
-                console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
+                console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
 
                 let selected_project = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
 
@@ -374,9 +390,57 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
             }),
 
 
-            new Utils.HOption("Remove A Project"), async (v) => {
+            new Utils.HOption("Remove A Project", async (v) => {
+                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length < 1){
+                    console.log("You have no projects.")
 
-            },
+                    console.log("Press Enter to return")
+                    await ServerUtils.InputManager.readLine()
+                    return
+                }   
+
+                console.log("JPM will not 'delete' your project folder or its contents it will still exist in the directory it was made in. JPM will set the projects 'isActive' property to false and JPM will not be able to detect it. You can manually enable/disable it from your project based on your needs.")
+
+                console.log("Press Enter to continue, or 'cancel to return.")
+                if(await ServerUtils.InputManager.readLine() == "cancel")return
+
+                console.log("Choose a project to remove\n")
+                console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
+
+                let chosen_project = await (HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+
+                let proj_dir = Path.join(chosen_project.performAction()[1], chosen_project.performAction()[0]["project_name"])
+                
+                let path_to_hproj = Path.join(proj_dir,"HProj.json")
+
+                if(ServerUtils.isFile(path_to_hproj)){
+                    console.log("Are you sure you want to remove " + chosen_project.getName() + "?\nIf you want JPM to manage the project again you have to set the 'isActive' attribute back to true in the Projects HProj.json file.\nType ok (all lowercase) to confirm else you will be returned back to the main menu.")
+
+                    if(await ServerUtils.InputManager.readLine() != "ok")return
+                    
+                    
+                    
+                    
+                    
+
+                    const contents = (ServerUtils.getJSONFile(path_to_hproj))
+
+                    contents["isActive"] = false
+
+                    ServerUtils.writeFile(path_to_hproj,JSON.stringify(contents))
+
+                    
+
+                    console.log(chosen_project.getName() + " has been removed.")
+                }else{
+                    console.log("HProj.json is missing in the project directory. Reconstruct or recover the file and restart the program")
+                }
+
+                await refreshLists()
+
+                console.log("Press Enter to return")
+                await ServerUtils.InputManager.readLine() 
+            }),
 
 
             new Utils.HOption("Make a Template", async (v) => {
@@ -432,6 +496,24 @@ export function getRangeArr(start, end){
     return arr
 }
 
+async function refreshLists(){
+    HPROJECT_LIST_OPTIONS = (new HProject_List())
+
+    HPROJECT_INFO_LIST_OPTIONS = (new HProject_Info_List())
+
+    HACTIVE_PROJECTS_LIST_OPTIONS = (new HActive_Projects_List())
+
+    HINACTIVE_PROJECTS_LIST_OPTIONS = (new HInactive_Projects_List())
+
+    HPROJECT_VISIBILITY_LIST_OPTIONS = (new HProject_Visibility_List())
+
+    HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS = (new HTyped_Active_Projects_List())
+
+    HTYPED_INACTIVE_PROJECTS_LIST_OPTIONS = (new HTyped_Inactive_Projects_List())
+
+    HTYPED_PROJECTS_LIST = (new HTyped_Projects_List())
+}
+
 export const H_NO_PROJDIR_FOUND_OPTIONS = (new HUser_Directory_Resolve())
 
 export const HPROJECT_MANAGER_MAIN_MENU_OPTIONS = (new HProject_Manager_Main_Menu())
@@ -453,7 +535,16 @@ export let HPROJECT_VISIBILITY_LIST_OPTIONS = (new HProject_Visibility_List())
 
 export let HINACTIVE_PROJECTS_LIST_OPTIONS = (new HInactive_Projects_List())
 
+export let HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS = (new HTyped_Active_Projects_List())
+
+export let HTYPED_INACTIVE_PROJECTS_LIST_OPTIONS = (new HTyped_Inactive_Projects_List())
+
+export let HTYPED_PROJECTS_LIST = (new HTyped_Projects_List())
+
 export let HBROWSER_OPTION_LIST_OPTIONS = (new HBrowser_Option_List())
+
+
+
 //---
 
 
