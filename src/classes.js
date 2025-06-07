@@ -57,17 +57,17 @@ export class HCreate_Project_Type extends Utils.HOptionList{
 
 export class HFrontEndTemplates_List extends Utils.HOptionList{
     constructor(){
-         super(ServerUtils.ListDirectories("./res/templates/frontend_templates").map((v) => {
+         super((ServerUtils.isDirectory("./res/templates/frontend_templates")) ? ServerUtils.ListDirectories("./res/templates/frontend_templates").map((v) => {
             return new Utils.HOption(v, async () => Path.join(Path.resolve("./res/templates/frontend_templates"), v))
-        }))
+        }) : [])
     }
 }
 
 export class HBackEndTemplates_List extends Utils.HOptionList{
      constructor(){
-        super(ServerUtils.ListDirectories("./res/templates/backend_templates").map((v) => {
+        super((ServerUtils.isDirectory("./res/templates/backend_templates")) ? ServerUtils.ListDirectories("./res/templates/backend_templates").map((v) => {
             return new Utils.HOption(v, async () => Path.join(Path.resolve("./res/templates/backend_templates"), v))
-        }))
+        }) : [])
     }
 }
 
@@ -250,6 +250,8 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 
                 if(selected_template_options.getOptions().length < 1){
                     console.log("You do not have any " + type + " templates, normally there would be a default one but it may have been moved or deleted. You can either create a template or download the default one from the github repo\n[link:] - https://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates\nThe Program will now exit.")
+                    console.log("Press Enter to continue")
+                await ServerUtils.InputManager.readLine()
                     return null
                 }
                 console.log("Choose a Project Template from the list:")
@@ -276,7 +278,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 await refreshLists()
 
                 console.log(`Project ${project_name} created!.`)
-                console.log("Press Enter to continue")
+                console.log("Press Enter to return")
                 await ServerUtils.InputManager.readLine()
             }),
 
@@ -648,7 +650,7 @@ export let HCONFIGURATION_MENU_LIST_OPTIONS = (new HConfiguration_Menu_List())
 //---
 
 
-export let MISSING_BACKEND_TEMPLATES_ERRMSG =  "*backend templates are missing, you will be unable to create backend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the backend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +" if the res or template folder does not exist place reconstruct the path.\n\nThe last option is to create your own backend template*"
+export let MISSING_BACKEND_TEMPLATES_ERRMSG =  "*backend templates are missing, you will be unable to create backend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the backend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +" if the res or template folder does not exist place reconstruct the path.\n\n*The last option is to create your own backend template*"
 
-export const MISSING_FRONTEND_TEMPLATES_ERRMSG =  "*frontend templates are missing, you will be unable to create frontend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the frontend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +"\nif the res or template folder does not exist, reconstruct the path.\n\nThe last option is to create your own frontend template*\n\n"
+export const MISSING_FRONTEND_TEMPLATES_ERRMSG =  "*frontend templates are missing, you will be unable to create frontend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the frontend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +"\nif the res or template folder does not exist, reconstruct the path.\n\n*The last option is to create your own frontend template*\n\n"
 

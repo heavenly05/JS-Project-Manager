@@ -30,10 +30,14 @@ let HConfig
 async function run(){
         if(!ServerUtils.isDirectory("./res/templates/backend_templates")){
         console.error(MISSING_BACKEND_TEMPLATES_ERRMSG)
+        console.warn("Press Enter to Proceed.")
+                await ServerUtils.InputManager.readLine()
     }
 
       if(!ServerUtils.isDirectory("./res/templates/frontend_templates")){
-         console.error(MISSING_FRONTEND_TEMPLATES_ERRMSG)
+        console.error(MISSING_FRONTEND_TEMPLATES_ERRMSG)
+        console.warn("Press Enter to Proceed.")
+        await ServerUtils.InputManager.readLine()
     }
 
     const path_to_HConfig = Path.join(script_dir, "HConfig.json")
@@ -82,6 +86,8 @@ async function run(){
 
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
+
+
 
 // execSync("start cmd /k node .")
 
