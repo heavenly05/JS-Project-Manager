@@ -32,13 +32,6 @@ export class HUser_Directory_Resolve extends Utils.HOptionList{
 export class HCreate_Project_Type extends Utils.HOptionList{
     constructor(){
         super([
-            new Utils.HOption("Backend Project", async () => {
-                if(!ServerUtils.isDirectory("./res/templates/backend_templates")){
-                        console.warn(MISSING_BACKEND_TEMPLATES_ERRMSG)
-                        return null
-                    }
-                    return "backend"
-            }),
 
             new Utils.HOption("Frontend Project", async () => {
                 if(!ServerUtils.isDirectory("./res/templates/frontend_templates")){
@@ -47,6 +40,14 @@ export class HCreate_Project_Type extends Utils.HOptionList{
                         return null
                     }
                     return "frontend"
+            }),
+
+            new Utils.HOption("Backend Project", async () => {
+                if(!ServerUtils.isDirectory("./res/templates/backend_templates")){
+                        console.warn(MISSING_BACKEND_TEMPLATES_ERRMSG)
+                        return null
+                    }
+                    return "backend"
             }),
 
             new Utils.HOption("Cancel", async () => null),
@@ -473,7 +474,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                     }else console.log("Template name cannot contain any spaces. use - or _ instead.")
                 }
 
-                console.log("\nEnter the path to where your template is stored.\nAll the files and folders will be copied from thereand placed within the JPM's templates folder. Templates must be deleted manually.\n*files that dont have names and only file extenstion (ex:.gitignore), may cause errors when copying the template. ensure you rename or remove the files before making your template.*\n\nType cancel to return.\n")
+                console.log("\nEnter the path to where your template is stored.\nAll the files and folders will be copied from thereand placed within the JPM's templates folder. Templates must be deleted manually.")
 
                 while(true){
                     let inp = await ServerUtils.InputManager.readLine()
@@ -494,19 +495,19 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log(template_name + " template created. Press Enter to return.")
                 
                 } catch (error) {
-                    console.error("could not create template, ensure you dont have any files in the template directory beginning with a period.\nPress Enter to return.")
-                    
+                    console.error("An error occued while copying your template, Some things may be missing from it.")
                 }
                 
                 
-
+                await ServerUtils.InputManager.readLine()
                 
             }),
 
 
             new Utils.HOption("Configuration", async (v) => {
-                console.log
-                await HCreate_Project_Type_Options.getOptions()[Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptions().length), "thats not a valid input"))) - 1].performAction()
+                console.log(HCONFIGURATION_MENU_LIST_OPTIONS.toString())
+
+               if(await HCONFIGURATION_MENU_LIST_OPTIONS.getOptions()[Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCONFIGURATION_MENU_LIST_OPTIONS.getOptions().length), "thats not a valid input"))) - 1].performAction() == null) return null
 
                 console.log("Press enter to return")
                 await ServerUtils.InputManager.readLine()
@@ -528,7 +529,7 @@ export class HConfiguration_Menu_List extends Utils.HOptionList{
                 const path_to_HConfig = Path.join(script_dir, "HConfig.json")
 
                 if(ServerUtils.isFile(path_to_HConfig)){
-                    HConfig = ServerUtils.getJSONFile(path_to_HConfig) 
+                    let HConfig = ServerUtils.getJSONFile(path_to_HConfig) 
                         
                     console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
 
@@ -537,7 +538,20 @@ export class HConfiguration_Menu_List extends Utils.HOptionList{
                     let inp = await selected_option.performAction(script_dir)
 
                     console.log(inp)
+                }else{
+                    console.log("HConfig.json is missing, please reconstruct it or recover it.")
                 }
+                return ""
+            }),
+
+            new Utils.HOption("View Projects Directory Path", async () => {
+                const script_dir = import.meta.dirname
+                const path_to_HConfig = Path.join(script_dir, "HConfig.json")
+                    if(ServerUtils.isFile(path_to_HConfig)){
+                        console.log(path_to_HConfig)
+                    }else console.log("HConfig.json file is missing. please recover it or change the project directory.")
+
+                    return ""
             }),
 
 
