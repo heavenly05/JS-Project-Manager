@@ -22,6 +22,7 @@ export class HUser_Directory_Resolve extends Utils.HOptionList{
                 new Utils.HOption("Let the project manager create a new HProjects directory(recommended)", async (arg) => {
                     if(typeof arg != 'string') throw new Error("arg must be a typeof string.")
                     if(!ServerUtils.isDirectory(arg)) throw new Error("arg must be a directory.")
+                    if(ServerUtils.isDirectory(Path.join(arg, "HProjects"))) return Path.join(arg, "HProjects")
                     return ServerUtils.makeFolder(arg, "HProjects")
                 }),
                 new Utils.HOption("Exit", async () => process.exit(0))
@@ -153,7 +154,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
 
         super([
             new Utils.HOption("Active Projects", () => {
-                if((HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
+                if((HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() > 0)){
 
                     console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 }else{
@@ -163,7 +164,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
             }),
 
             new Utils.HOption("Inactive Projects", () => {
-                if((HINACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
+                if((HINACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() > 0)){
                     console.log(HTYPED_INACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 }else{
                     console.log("[* You have no inactive projects *]")
@@ -172,7 +173,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
             }),
 
             new Utils.HOption("All Projects", () => {
-                 if((HTYPED_PROJECTS_LIST.getOptions().length > 0)){
+                 if((HTYPED_PROJECTS_LIST.getOptionCount() > 0)){
                     console.log(HTYPED_PROJECTS_LIST.toString())
                 }else{
                     console.log("[* You have no projects *]")
@@ -198,9 +199,10 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 if(typeof v != "string")throw new Error("v must be a string")
                 if(!ServerUtils.isDirectory(v)) throw new Error("projectDir is not a directory. Please relaunch the program to attempt to fix errors")
-                
+                    
+                console.log("If you are trying to use an existing project, create a new project with your informatin, load it ")
                 console.log("Project Creator.\nType 'cancel' to go back")
-
+                
                 console.log("Please enter a project name")
                 let project_name
                 let date = Utils.getDate()
@@ -238,7 +240,8 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log("Select a project type from the projects list.\n")
                 console.log(HCreate_Project_Type_Options.toString())
                 while(true){
-                    let selected_option = HCreate_Project_Type_Options.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HCreate_Project_Type_Options.getOptions().length), "Thats not a valid input")))) - 1]
+                    // HCreate_Project_Type_Options.getOptionCount()
+                    let selected_option = HCreate_Project_Type_Options.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HCreate_Project_Type_Options.getOptionCount()), "Thats not a valid input")))) - 1)
                 
                     type = await selected_option.performAction()
                     if(type == null) return null
@@ -248,18 +251,18 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 if(type == "backend") selected_template_options = HBACKEND_TEMPLATE_OPTIONS; else selected_template_options = HFRONTEND_TEMPLATE_OPTIONS
                 
-                if(selected_template_options.getOptions().length < 1){
+                if(selected_template_options.getOptionCount() < 1){
                     console.log("You do not have any " + type + " templates, normally there would be a default one but it may have been moved or deleted. You can either create a template or download the default one from the github repo\n[link:] - https://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates\nThe Program will now exit.")
                     return null
                 }
                 console.log("Choose a Project Template from the list:")
-                console.log("\nYou currently have: " + selected_template_options.getOptions().length + " " + type +" templates")
+                console.log("\nYou currently have: " + selected_template_options.getOptionCount() + " " + type +" templates")
 
                 console.log(selected_template_options.toString())
                 
                 let path_to_template
                 while(true){
-                    path_to_template = await selected_template_options.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,selected_template_options.getOptions().length), "Thats not a valid input")))) - 1].performAction()
+                    path_to_template = await selected_template_options.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,selected_template_options.getOptionCount()), "Thats not a valid input")))) - 1).performAction()
                     break
                 }
                 //used bad naming convention, but whatever
@@ -281,7 +284,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
             }),
 
             new Utils.HOption("Load a Project", async (v) => {
-                if(HPROJECT_LIST_OPTIONS.getOptions().length < 1){
+                if(HPROJECT_LIST_OPTIONS.getOptionCount() < 1){
                     console.log("You currently have no projects!")
                     return
                 }
@@ -290,16 +293,16 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log("Press Enter to Proceed")
                 await ServerUtils.InputManager.readLine()
 
-                console.log(`You have ${HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length } active projects.`)
+                console.log(`You have ${HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() } active projects.`)
                 console.log("Select which project you would like to load.")
 
                 console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 
-                let option = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+                let option = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1)))
 
                 execSync(`code ${Path.join(option.performAction(), option.getName())}`)
 
-                console.log("project loaded. Press enter to return.")
+                console.log("Project loaded. Press enter to return.")
                 console.log("Press Enter to continue")
                 await ServerUtils.InputManager.readLine()
 
@@ -318,7 +321,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 console.log(HPROJECT_VISIBILITY_LIST_OPTIONS.toString())
 
-            await (HPROJECT_VISIBILITY_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HPROJECT_VISIBILITY_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()
+            await (HPROJECT_VISIBILITY_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HPROJECT_VISIBILITY_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1))).performAction()
                 console.log("Press Enter to return")
                 await ServerUtils.InputManager.readLine()
             }),
@@ -341,7 +344,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
 
-                let selected_project = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+                let selected_project = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1)))
 
                 let selected_project_path = Path.join(selected_project.performAction(), selected_project.getName())
 
@@ -374,7 +377,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                     if(ServerUtils.doesFileExist(Path.join(selected_project_path, "src/index.html"))){
                         console.log("Select a browser\n")
                         console.log(HBROWSER_OPTION_LIST_OPTIONS.toString())
-                        execSync(`start ${await (HBROWSER_OPTION_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HBROWSER_OPTION_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()} ${Path.join(selected_project_path, "src/index.html")}`)
+                        execSync(`start ${await (HBROWSER_OPTION_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HBROWSER_OPTION_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1))).performAction()} ${Path.join(selected_project_path, "src/index.html")}`)
 
                     }else{
                         console.log("Project does not contain a src/index.html file")
@@ -394,7 +397,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
 
             new Utils.HOption("Remove A Project", async (v) => {
-                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length < 1){
+                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() < 1){
                     console.log("You have no projects.")
 
                     console.log("Press Enter to return")
@@ -410,7 +413,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log("Choose a project to remove\n")
                 console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
 
-                let chosen_project = await (HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+                let chosen_project = await (HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1)))
 
                 let proj_dir = Path.join(chosen_project.performAction()[1], chosen_project.performAction()[0]["project_name"])
                 
@@ -453,7 +456,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log("Choose which type of project your template will be for.\n")
                 console.log(HCreate_Project_Type_Options.toString())
                 while(true){
-                    type = await await HCreate_Project_Type_Options.getOptions()[Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptions().length), "thats not a valid input"))) - 1].performAction()
+                    type = await await HCreate_Project_Type_Options.getOption(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptionCount()), "thats not a valid input"))) - 1).performAction()
 
                     if (type == null) return
                     else break
@@ -507,7 +510,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
             new Utils.HOption("Configuration", async (v) => {
                 console.log(HCONFIGURATION_MENU_LIST_OPTIONS.toString())
 
-               if(await HCONFIGURATION_MENU_LIST_OPTIONS.getOptions()[Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCONFIGURATION_MENU_LIST_OPTIONS.getOptions().length), "thats not a valid input"))) - 1].performAction() == null) return null
+               if(await HCONFIGURATION_MENU_LIST_OPTIONS.getOption(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCONFIGURATION_MENU_LIST_OPTIONS.getOptionCount()), "thats not a valid input"))) - 1).performAction() == null) return null
 
                 console.log("Press enter to return")
                 await ServerUtils.InputManager.readLine()
@@ -533,11 +536,11 @@ export class HConfiguration_Menu_List extends Utils.HOptionList{
                         
                     console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
 
-                    let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptions().length), "Thats not a valid input")))) - 1]
+                    let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptionCount()), "Thats not a valid input")))) - 1)
 
                     let inp = await selected_option.performAction(script_dir)
 
-                    console.log(inp)
+                   
                 }else{
                     console.log("HConfig.json is missing, please reconstruct it or recover it.")
                 }

@@ -54,7 +54,7 @@ async function run(){
         while(true){
             console.log("There is no Projects Directory found, Please Choose an Option")
             console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
-            let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptions().length), "Thats not a valid input")))) - 1]
+            let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptionCount()), "Thats not a valid input")))) - 1]
             let inp = await selected_option.performAction(script_dir)
             if(inp != null) {
                 HConfig["projectDir"] = Path.resolve(inp)
@@ -73,7 +73,7 @@ async function run(){
    while(true){
         console.log(HPROJECT_MANAGER_MAIN_MENU_OPTIONS.toString())
 
-        let selected_option = HPROJECT_MANAGER_MAIN_MENU_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HPROJECT_MANAGER_MAIN_MENU_OPTIONS.getOptions().length), "Thats not a valid input")))) - 1]
+        let selected_option = HPROJECT_MANAGER_MAIN_MENU_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HPROJECT_MANAGER_MAIN_MENU_OPTIONS.getOptionCount()), "Thats not a valid input")))) - 1]
 
         await selected_option.performAction(projectDir)
         
@@ -83,23 +83,19 @@ async function run(){
 }
 run().then(v => ServerUtils.InputManager.close_stdin())
 
+
+
 // execSync("start cmd /k node .")
 
 /*TODO 
-    turn InputManger.readline()
- into a proper promise function
- 
-    add a getOptionsCount to HOptionList and HOptionListInterface
 
-    add a fnctionality to greet user by their name and the ability to change the name
+ 
+
 
     try to impement "getOption" instead of "getOptions" 
+    
 
-    fix getOption
 
-    edit List... functions in ServerUtils so their JDocs have the proper @returns tags
-
-    add returns unkonwn to JDOC of HOPTIONS 
  */
 
  

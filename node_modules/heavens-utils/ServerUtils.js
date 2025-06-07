@@ -37,8 +37,9 @@ class InputManager {
 
     /**
      * Reads from stdin via a watchmode. When new input is available returns a promise containing the query result.If an value array is specifiied, it will check every value in an array to see if it matches with the input. if the input does not match a value in the valueArr, it will print out the errMSG if specified, and wait for the next input
-     * @param {Array} valueArr 
-     * @returns {String}
+     * @param {string | undefined}
+     * @param {any[] | undefined} valueArr 
+     * @returns {string}
      */
     static async readLine(valueArr, errMSG) {
         if(valueArr != undefined && !Array.isArray(valueArr)) throw new Error("valueArr is not an array")
@@ -245,7 +246,7 @@ function ListFilesWithPaths(path){
    /**
  * 
  * @param {string} path 
- * @returns {{full_dir_path : string, dirname : string, dir_path : string}}
+ * @returns {{full_dir_path : string, dirname : string, dir_path : string}[]}
  * returns An array of objects containing all directories within a directory and i08/
  * ts path, if there are none it will return an empty array, returns null if59 it doesnt exist
  */
