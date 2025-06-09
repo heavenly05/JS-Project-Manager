@@ -21,7 +21,7 @@
 
 4.Open the directory in the terminal
 
-5.Use ```node .``` to run the program (its important to run with the ```packge.json``` file as the JPM relies on relative file paths from the JPM )
+5.Use ```node .``` to run the program (its important to run with the ```packge.json``` file as the JPM relies on relative file paths)
 
 # Menus
 JPM operates through the CLI (command line interface) It features various menus in which the user interacts through an I/O system allowing for versatile control over nearly everything
