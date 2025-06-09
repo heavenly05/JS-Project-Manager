@@ -3,7 +3,7 @@ import * as Utils from "heavens-utils/Utils"
 import * as Path from "path"
 import {execSync} from "child_process"
 import { isFloat32Array } from "util/types"
-import { readFileSync } from "fs"
+import { readFileSync, writeFile } from "fs"
 
 export class HUser_Directory_Resolve extends Utils.HOptionList{
     constructor(){
@@ -22,6 +22,7 @@ export class HUser_Directory_Resolve extends Utils.HOptionList{
                 new Utils.HOption("Let the project manager create a new HProjects directory(recommended)", async (arg) => {
                     if(typeof arg != 'string') throw new Error("arg must be a typeof string.")
                     if(!ServerUtils.isDirectory(arg)) throw new Error("arg must be a directory.")
+                    if(ServerUtils.isDirectory(Path.join(arg, "HProjects"))) return Path.join(arg, "HProjects")
                     return ServerUtils.makeFolder(arg, "HProjects")
                 }),
                 new Utils.HOption("Exit", async () => process.exit(0))
@@ -32,21 +33,23 @@ export class HUser_Directory_Resolve extends Utils.HOptionList{
 export class HCreate_Project_Type extends Utils.HOptionList{
     constructor(){
         super([
-            new Utils.HOption("Backend Project", async () => {
-                if(!ServerUtils.isDirectory("./res/templates/backend_templates")){
-                        console.warn(MISSING_BACKEND_TEMPLATES_ERRMSG)
-                        return null
-                    }
-                    return "backend"
+
+            new Utils.HOption("Frontend Project", async (ignore_check) => {
+                //set ignore to true to ignore directory checking
+                if(!ServerUtils.isDirectory("./res/templates/frontend_templates") && (!ignore_check)){
+                     console.warn(MISSING_FRONTEND_TEMPLATES_ERRMSG)
+                    return null
+                }
+                    return "frontend"
             }),
 
-            new Utils.HOption("Frontend Project", async () => {
-                if(!ServerUtils.isDirectory("./res/templates/frontend_templates")){
-                        console.warn(MISSING_FRONTEND_TEMPLATES_ERRMSG)
-
+            new Utils.HOption("Backend Project", async (ignore_check) => {
+                // console.log(!ignore_check)
+                if(!ServerUtils.isDirectory("./res/templates/backend_templates") && (!ignore_check)){
+                        console.warn(MISSING_BACKEND_TEMPLATES_ERRMSG)
                         return null
-                    }
-                    return "frontend"
+                }
+                    return "backend"
             }),
 
             new Utils.HOption("Cancel", async () => null),
@@ -54,19 +57,184 @@ export class HCreate_Project_Type extends Utils.HOptionList{
     }
 }
 
+export class HCreate_Project_List extends Utils.HOptionList{
+    constructor(){ 
+        super([
+            new Utils.HOption("Start from scratch", async (v) => {
+                //the passed in path would be the path to the ProjDir folder
+
+                //we will query the user for, the name of the project, the author, type and if they want utils.
+
+                if(typeof v != "string")throw new Error("v must be a string")
+                if(!ServerUtils.isDirectory(v)) throw new Error("projectDir is not a directory. Please relaunch the program to attempt to fix errors")
+                    
+                console.log("Project Creator.\nType 'cancel' to go back")
+                
+                console.log("Please enter a project name")
+                let project_name
+                let authors
+                let type
+                let selected_template_options
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+                    if(inp == 'cancel') return null
+                    if(!inp.includes(" ")){
+                        if(inp.length >= 3){
+                            if(!ServerUtils.isDirectory(Path.join(v, inp))){
+                                project_name = inp.toString()
+                                break
+                            }else console.log("A project with that name already exists.")
+                        }else console.log("Project name must be at least 3 characters long.")
+                    }else console.log("Project name cannot contain any spaces. use - or _ instead.")
+                }
+                
+                console.log("Project Name: " + project_name)
+
+                console.log("\nPlease enter the author(s) name(s). Use commas to seperate the names.")
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+                    if(inp == 'cancel') return null
+                    authors = inp.split(",")
+                    break
+                }
+
+                console.log("\nProject Authors: ")
+                console.log(authors)
+                
+                console.log("Select a project type from the projects list.\n")
+                console.log(HCreate_Project_Type_Options.toString())
+                while(true){
+                    // HCreate_Project_Type_Options.getOptionCount()
+                    let selected_option = HCreate_Project_Type_Options.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HCreate_Project_Type_Options.getOptionCount()), "Thats not a valid input")))) - 1)
+                
+                    type = await selected_option.performAction(false)
+                    if(type == null) return null
+                    break
+                }
+                console.log("Project Type: " + type + "\n")
+
+                if(type == "backend") selected_template_options = HBACKEND_TEMPLATE_OPTIONS; else selected_template_options = HFRONTEND_TEMPLATE_OPTIONS
+                
+                if(selected_template_options.getOptionCount() < 1){
+                    console.log("You do not have any " + type + " templates, normally there would be a default one but it may have been moved or deleted. You can either create a template or download the default one from the github repo\n[link:] - https://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates\nThe Program will now exit.")
+                    console.log("Press Enter to continue")
+                await ServerUtils.InputManager.readLine()
+                    return null
+                }
+                console.log("Choose a Project Template from the list:")
+                console.log("\nYou currently have: " + selected_template_options.getOptionCount() + " " + type +" templates")
+
+                console.log(selected_template_options.toString())
+                
+                let path_to_template
+                while(true){
+                    path_to_template = await selected_template_options.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,selected_template_options.getOptionCount()), "Thats not a valid input")))) - 1).performAction()
+                    break
+                }
+                //used bad naming convention, but whatever
+                let projOBJ = {
+                    project_name : project_name,
+                    dateCreated : Utils.getDate(),
+                    authors : authors,
+                    type : type,
+                    isActive : true
+                }
+
+                ServerUtils.writeFile(Path.join(ServerUtils.copyDirectory(path_to_template,v,project_name),"HProj.json"), JSON.stringify(projOBJ))
+                
+                await refreshLists()
+
+                console.log(`Project ${project_name} created.`)
+                return ""
+            }),
+            new Utils.HOption("Upload an existing project", async (v) => {
+                 console.warn("*note: no files will be moved from your project. Your project folder willbe copied to the JPM's project folder. The original folder will be untouched.*\n\nProject name will default to the directory name of the project. You can change the name in the HProj.json file of your project when its created.\n")
+                
+                console.log("Press enter to proceed. Type cancel to quit")
+
+                if(await ServerUtils.InputManager.readLine() == 'cancel')return null
+
+
+                console.log("Enter the path to your project directory\ntype cancel to quit.")
+                let project_name
+                let inp_path
+                let type
+                let authors
+
+                while(true) {
+                    inp_path = await ServerUtils.InputManager.readLine()
+                    if(inp_path == 'cancel') return null
+    
+                    if(ServerUtils.isDirectory(inp_path)) break;
+                    console.log("The path does not point to a folder")
+                }
+                inp_path = Path.resolve(inp_path)
+                project_name = Path.basename(inp_path)
+                let path_to_project = Path.join(v,project_name)
+                try {
+                    ServerUtils.copyDirectory(inp_path, v, project_name)
+                } catch (e) {
+                    console.warn("an error occured during copying the directory. Some content may be missing, reconstruct your project as you see fit\n")
+                    console.log("Press enter to proceed. Type cancel to quit")
+                    
+                    if(await ServerUtils.InputManager.readLine() == 'cancel')return null
+                }
+                
+                
+
+                console.log("\nPlease enter the author(s) name(s). Use commas to seperate the names.")
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+                    if(inp == 'cancel') return null
+                    authors = inp.split(",")
+                    break
+                }
+
+                console.log("\nProject Authors: ")
+                console.log(authors)
+
+                console.log("\nSelect your project type\n")
+
+                console.log(HCreate_Project_Type_Options.toString())
+
+                type = await HCreate_Project_Type_Options.getOption(Number.parseInt(await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptionCount()), "not a valid input")) - 1).performAction()
+
+                if(type == null) return null
+                
+                
+                ServerUtils.writeFile(Path.join(path_to_project, "HProj.json"), JSON.stringify({
+                    project_name : project_name,
+                    dateCreated : Utils.getDate(),
+                    authors : authors,
+                    type : type,
+                    isActive : true
+                }))
+
+                await refreshLists()
+
+                console.log("Project " + project_name + " created.")
+                return ""
+            })
+        ])
+    }
+}
+
 export class HFrontEndTemplates_List extends Utils.HOptionList{
     constructor(){
-         super(ServerUtils.ListDirectories("./res/templates/frontend_templates").map((v) => {
+         super((ServerUtils.isDirectory("./res/templates/frontend_templates")) ? ServerUtils.ListDirectories("./res/templates/frontend_templates").map((v) => {
             return new Utils.HOption(v, async () => Path.join(Path.resolve("./res/templates/frontend_templates"), v))
-        }))
+        }) : [])
     }
 }
 
 export class HBackEndTemplates_List extends Utils.HOptionList{
      constructor(){
-        super(ServerUtils.ListDirectories("./res/templates/backend_templates").map((v) => {
+        super((ServerUtils.isDirectory("./res/templates/backend_templates")) ? ServerUtils.ListDirectories("./res/templates/backend_templates").map((v) => {
             return new Utils.HOption(v, async () => Path.join(Path.resolve("./res/templates/backend_templates"), v))
-        }))
+        }) : [])
     }
 }
 
@@ -152,7 +320,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
 
         super([
             new Utils.HOption("Active Projects", () => {
-                if((HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
+                if((HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() > 0)){
 
                     console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 }else{
@@ -162,7 +330,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
             }),
 
             new Utils.HOption("Inactive Projects", () => {
-                if((HINACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length > 0)){
+                if((HINACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() > 0)){
                     console.log(HTYPED_INACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 }else{
                     console.log("[* You have no inactive projects *]")
@@ -171,7 +339,7 @@ export class HProject_Visibility_List extends Utils.HOptionList{
             }),
 
             new Utils.HOption("All Projects", () => {
-                 if((HTYPED_PROJECTS_LIST.getOptions().length > 0)){
+                 if((HTYPED_PROJECTS_LIST.getOptionCount() > 0)){
                     console.log(HTYPED_PROJECTS_LIST.toString())
                 }else{
                     console.log("[* You have no projects *]")
@@ -191,94 +359,20 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
     constructor(){
         super([
             new Utils.HOption("Create new Project", async (v) => {
-                //the passed in path would be the path to the ProjDir folder
-
-                //we will query the user for, the name of the project, the author, type and if they want utils.
-
-                if(typeof v != "string")throw new Error("v must be a string")
-                if(!ServerUtils.isDirectory(v)) throw new Error("projectDir is not a directory. Please relaunch the program to attempt to fix errors")
                 
-                console.log("Project Creator.\nType 'cancel' to go back")
-
-                console.log("Please enter a project name")
-                let project_name
-                let date = Utils.getDate()
-                let authors
-                let type
-                let selected_template_options
-
-                while(true){
-                    let inp = await ServerUtils.InputManager.readLine()
-                    if(inp == 'cancel') return null
-                    if(!inp.includes(" ")){
-                        if(inp.length >= 3){
-                            project_name = inp.toString()
-                            break
-                        }else console.log("Project name must be at least 3 characters long.")
-                    }else console.log("Project name cannot contain any spaces. use - or _ instead.")
-                }
+                console.log("Select an option\n")
                 
-                console.log("Project Name: " + project_name)
-
-                console.log("\nPlease enter the author(s) name(s). Use commas to seperate the names.")
-
-                while(true){
-                    let inp = await ServerUtils.InputManager.readLine()
-                    if(inp == 'cancel') return null
-                    authors = inp.split(",")
-                    break
-                }
-
-                console.log("\nProject Authors: ")
-                console.log(authors)
+                console.log(HCREATE_PROJECT_LIST_OPTIONS.toString())
                 
-                console.log("Select a project type from the projects list.\n")
-                console.log(HCreate_Project_Type_Options.toString())
-                while(true){
-                    let selected_option = HCreate_Project_Type_Options.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,HCreate_Project_Type_Options.getOptions().length), "Thats not a valid input")))) - 1]
-                
-                    type = await selected_option.performAction()
-                    if(type == null) return null
-                    break
-                }
-                console.log("Project Type: " + type + "\n")
+                 if(await HCREATE_PROJECT_LIST_OPTIONS.getOption(Number.parseInt(await ServerUtils.InputManager.readLine(getRangeArr(1, HCREATE_PROJECT_LIST_OPTIONS.getOptionCount()), "not a valid input")) - 1).performAction(v) == null) return 
 
-                if(type == "backend") selected_template_options = HBACKEND_TEMPLATE_OPTIONS; else selected_template_options = HFRONTEND_TEMPLATE_OPTIONS
-                
-                if(selected_template_options.getOptions().length < 1){
-                    console.log("You do not have any " + type + " templates, normally there would be a default one but it may have been moved or deleted. You can either create a template or download the default one from the github repo\n[link:] - https://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates\nThe Program will now exit.")
-                    return null
-                }
-                console.log("Choose a Project Template from the list:")
-                console.log("\nYou currently have: " + selected_template_options.getOptions().length + " " + type +" templates")
-
-                console.log(selected_template_options.toString())
-                
-                let path_to_template
-                while(true){
-                    path_to_template = await selected_template_options.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,selected_template_options.getOptions().length), "Thats not a valid input")))) - 1].performAction()
-                    break
-                }
-                //used bad naming convention, but whatever
-                let projOBJ = {
-                    project_name : project_name,
-                    dateCreated : date,
-                    authors : authors,
-                    type : type,
-                    isActive : true
-                }
-
-                ServerUtils.writeFile(Path.join(ServerUtils.copyDirectory(path_to_template,v,project_name),"HProj.json"), JSON.stringify(projOBJ))
-                
-                await refreshLists()
-
-                console.log(`Project ${project_name} created!.`)
-                console.log("Press Enter to continue")
+                console.log("Press enter to return")
                 await ServerUtils.InputManager.readLine()
             }),
 
             new Utils.HOption("Load a Project", async (v) => {
-                if(HPROJECT_LIST_OPTIONS.getOptions().length < 1){
+                await refreshLists()
+                if(HPROJECT_LIST_OPTIONS.getOptionCount() < 1){
                     console.log("You currently have no projects!")
                     return
                 }
@@ -287,16 +381,16 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log("Press Enter to Proceed")
                 await ServerUtils.InputManager.readLine()
 
-                console.log(`You have ${HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length } active projects.`)
+                console.log(`You have ${HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() } active projects.`)
                 console.log("Select which project you would like to load.")
 
                 console.log(HACTIVE_PROJECTS_LIST_OPTIONS.toString())
                 
-                let option = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+                let option = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1)))
 
                 execSync(`code ${Path.join(option.performAction(), option.getName())}`)
 
-                console.log("project loaded. Press enter to return.")
+                console.log("Project loaded. Press enter to return.")
                 console.log("Press Enter to continue")
                 await ServerUtils.InputManager.readLine()
 
@@ -304,6 +398,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
             
             new Utils.HOption("View Current Projects", async (v) => {
+                await refreshLists()
                 if(HPROJECT_INFO_LIST_OPTIONS.getOptions() < 1){
                     console.log("You have no projects")
                     console.log("Press Enter to return")
@@ -315,13 +410,14 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 console.log(HPROJECT_VISIBILITY_LIST_OPTIONS.toString())
 
-            await (HPROJECT_VISIBILITY_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HPROJECT_VISIBILITY_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()
+            await (HPROJECT_VISIBILITY_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HPROJECT_VISIBILITY_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1))).performAction()
                 console.log("Press Enter to return")
                 await ServerUtils.InputManager.readLine()
             }),
 
 
             new Utils.HOption("Run a Project", async(v) => {
+                await refreshLists()
                 if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptions() < 1){
                     console.log("You have no active projects")
                     console.log("Press Enter to return")
@@ -338,7 +434,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
                 console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
 
-                let selected_project = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+                let selected_project = await (HACTIVE_PROJECTS_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1)))
 
                 let selected_project_path = Path.join(selected_project.performAction(), selected_project.getName())
 
@@ -371,7 +467,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                     if(ServerUtils.doesFileExist(Path.join(selected_project_path, "src/index.html"))){
                         console.log("Select a browser\n")
                         console.log(HBROWSER_OPTION_LIST_OPTIONS.toString())
-                        execSync(`start ${await (HBROWSER_OPTION_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HBROWSER_OPTION_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)]).performAction()} ${Path.join(selected_project_path, "src/index.html")}`)
+                        execSync(`start ${await (HBROWSER_OPTION_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HBROWSER_OPTION_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1))).performAction()} ${Path.join(selected_project_path, "src/index.html")}`)
 
                     }else{
                         console.log("Project does not contain a src/index.html file")
@@ -391,7 +487,8 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
 
             new Utils.HOption("Remove A Project", async (v) => {
-                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length < 1){
+                await refreshLists()
+                if(HACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount() < 1){
                     console.log("You have no projects.")
 
                     console.log("Press Enter to return")
@@ -407,7 +504,7 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
                 console.log("Choose a project to remove\n")
                 console.log(HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.toString())
 
-                let chosen_project = await (HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptions()[(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptions().length), "Invalid value."))) - 1)])
+                let chosen_project = await (HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HTYPED_ACTIVE_PROJECTS_LIST_OPTIONS.getOptionCount()), "Invalid value."))) - 1)))
 
                 let proj_dir = Path.join(chosen_project.performAction()[1], chosen_project.performAction()[0]["project_name"])
                 
@@ -445,11 +542,70 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
 
             new Utils.HOption("Make a Template", async (v) => {
                 
+                let type
+                let template_name
+                let path_to_template
+                console.log("Choose which type of project your template will be for.\n")
+                console.log(HCreate_Project_Type_Options.toString())
+                while(true){
+                    type = await await HCreate_Project_Type_Options.getOption(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCreate_Project_Type_Options.getOptionCount()), "thats not a valid input"))) - 1).performAction()
+
+                    if (type == null) return
+                    else break
+                }
+
+                 console.log('Enter a name for your Template\nType cancel to return.\n') 
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+                    if(inp == 'cancel') return null
+                    if(!inp.includes(" ")){
+                        if(inp.length >= 3){
+                            if((type == "frontend" && !ServerUtils.isDirectory(Path.join("./res/templates/frontend_templates" , inp))) || (type == "backend" && !ServerUtils.isDirectory(Path.join("./res/templates/backend_templates" , inp)))){
+                                template_name = inp.toString()
+                                break
+                            }else console.log("A Template with that name already exists.")
+                        }else console.log("Template name must be at least 3 characters long.")
+                    }else console.log("Template name cannot contain any spaces. use - or _ instead.")
+                }
+
+                console.log("\nEnter the path to where your template is stored.\nAll the files and folders will be copied from thereand placed within the JPM's templates folder. Templates must be deleted manually.")
+
+                while(true){
+                    let inp = await ServerUtils.InputManager.readLine()
+
+                    if(inp == 'cancel') return null
+                    if(ServerUtils.isDirectory(inp)) {
+                        path_to_template = inp
+                        break
+                    }
+                    console.log("The path specified does not point to a folder. Please enter a valid path.")
+                }
+                try {
+                    ServerUtils.copyDirectory(path_to_template, (type == "frontend") ? "./res/templates/frontend_templates" : "./res/templates/backend_templates", template_name)
+                    HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
+
+                    HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
+
+                console.log(template_name + " template created. Press Enter to return.")
+                
+                } catch (error) {
+                    console.error("An error occued while copying your template, Some things may be missing from it.")
+                }
+                
+                
+                await ServerUtils.InputManager.readLine()
+                
             }),
 
 
             new Utils.HOption("Configuration", async (v) => {
+                console.log(HCONFIGURATION_MENU_LIST_OPTIONS.toString())
 
+               if(await HCONFIGURATION_MENU_LIST_OPTIONS.getOption(Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1, HCONFIGURATION_MENU_LIST_OPTIONS.getOptionCount()), "thats not a valid input"))) - 1).performAction() == null) return null
+
+                console.log("Press enter to return")
+                await ServerUtils.InputManager.readLine()
             }),
 
 
@@ -459,6 +615,60 @@ export class HProject_Manager_Main_Menu extends Utils.HOptionList{
     }
 }
 
+export class HConfiguration_Menu_List extends Utils.HOptionList{
+    constructor(){
+        //develper can change their projects directory
+        super([
+            new Utils.HOption("Change Projects Directory",async () => {
+                const script_dir = import.meta.dirname
+                const path_to_HConfig = Path.join(script_dir, "HConfig.json")
+
+                if(ServerUtils.isFile(path_to_HConfig)){
+                    let HConfig = ServerUtils.getJSONFile(path_to_HConfig) 
+                        
+                    console.log(H_NO_PROJDIR_FOUND_OPTIONS.toString())
+
+                    let selected_option = H_NO_PROJDIR_FOUND_OPTIONS.getOption((Number.parseInt((await ServerUtils.InputManager.readLine(getRangeArr(1,H_NO_PROJDIR_FOUND_OPTIONS.getOptionCount()), "Thats not a valid input")))) - 1)
+
+                    let inp = await selected_option.performAction(script_dir)
+
+                   
+                }else{
+                    console.log("HConfig.json is missing, please reconstruct it or recover it.")
+                }
+                await refreshLists()
+                return ""
+            }),
+
+            new Utils.HOption("View Projects Directory Path", async () => {
+                const script_dir = import.meta.dirname
+                const path_to_HConfig = Path.join(script_dir, "HConfig.json")
+                    if(ServerUtils.isFile(path_to_HConfig)){
+                        console.log(path_to_HConfig)
+                    }else console.log("HConfig.json file is missing. please recover it or change the project directory.")
+
+                    return ""
+            }),
+            
+            new Utils.HOption("View Templates Directory Path", async () => {
+                
+                    if(ServerUtils.isDirectory("./res/templates")){
+                        console.log(Path.resolve("./res/templates"))
+                    }else console.log("res/templates is missing from the project directory. Recover the folder or reconstruct it.")
+
+                    return ""
+            }),
+
+            new Utils.HOption("More info", async () => {
+                console.log("Created by heaven because setting up projects is hard")
+
+                    return ""
+            }),
+
+            new Utils.HOption("cancel", () => null)
+        ])
+    }
+}
 
 
 //6/4/2025
@@ -520,9 +730,9 @@ export const HPROJECT_MANAGER_MAIN_MENU_OPTIONS = (new HProject_Manager_Main_Men
 
 export const HCreate_Project_Type_Options = (new HCreate_Project_Type())
 
-export const HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
+export let HFRONTEND_TEMPLATE_OPTIONS = (new HFrontEndTemplates_List())
 
-export const HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
+export let HBACKEND_TEMPLATE_OPTIONS = (new HBackEndTemplates_List())
 
 //everything to do with managing project folders
 export let HPROJECT_LIST_OPTIONS = (new HProject_List())
@@ -543,12 +753,13 @@ export let HTYPED_PROJECTS_LIST = (new HTyped_Projects_List())
 
 export let HBROWSER_OPTION_LIST_OPTIONS = (new HBrowser_Option_List())
 
+export let HCONFIGURATION_MENU_LIST_OPTIONS = (new HConfiguration_Menu_List())
 
-
+export let HCREATE_PROJECT_LIST_OPTIONS = (new HCreate_Project_List())
 //---
 
 
-export let MISSING_BACKEND_TEMPLATES_ERRMSG =  "*backend templates are missing, you will be unable to create backend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the backend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +" if the res or template folder does not exist place reconstruct the path.\n\nThe last option is to create your own backend template*"
+export let MISSING_BACKEND_TEMPLATES_ERRMSG =  "*backend templates are missing, you will be unable to create backend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the backend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +" if the res or template folder does not exist place reconstruct the path.\n\n*The last option is to create your own backend template*"
 
-export const MISSING_FRONTEND_TEMPLATES_ERRMSG =  "*frontend templates are missing, you will be unable to create frontend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the frontend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +"\nif the res or template folder does not exist, reconstruct the path.\n\nThe last option is to create your own frontend template*\n\n"
+export const MISSING_FRONTEND_TEMPLATES_ERRMSG =  "*frontend templates are missing, you will be unable to create frontend projects. if you deleted or moved the folder, place it back where it was and re-run the program.* If you cannot recover the folder navigate to this link: \nhttps://github.com/heavenly05/JS-Project-Manager/tree/development/res/templates \nDownload the frontend_templates folder and place it in the the following path: " + Path.join(Path.dirname(import.meta.dirname),"/res/templates") +"\nif the res or template folder does not exist, reconstruct the path.\n\n*The last option is to create your own frontend template*\n\n"
 

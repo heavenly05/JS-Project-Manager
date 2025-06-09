@@ -1271,7 +1271,7 @@ export class HOptionListInterface{
      */
     getOption(index){
         if(!(Number.isInteger(index))) throw new Error("index must be a number")
-        
+            console.log(this.#list[index])
         return this.#list[index]
     }
 

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <!--ONLY STYLES BELOW-->
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html{
+            margin: 0;
+            padding: 0;
+        }
+        body,html{
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #content_container{
+            display: grid;
+            place-items: center;
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        #page_heading{
+            font-family: monospace;
+            border-bottom: 2px solid black;
+        }
+
+        #page_canvas{
+            width: 100%;
+            margin: 0;
+            border: 1px solid black;
+        }
+
+       @media screen and (min-width: 1025px) {
+            #content_container{
+                width: 75%;
+            }
+        }
+        @media screen and (max-width: 1024px) {
+            #content_container{
+                width: 90%;
+            }
+        }
+
+
+
+    </style>
+</head>
+<body>
+    <div id="content_container">
+    <h1 id="page_heading">project_name</h1>
+        <canvas id="page_canvas"></canvas>
+        <script type="module" src="./main.js" defer></script>
+    </div>
+</body>
+</html>
